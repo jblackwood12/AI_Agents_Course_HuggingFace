@@ -209,3 +209,7 @@ __marimo__/
 .gradio/
 
 Chapter_2/llamaindex/data/
+
+*.bin
+
+*.sqlite3
