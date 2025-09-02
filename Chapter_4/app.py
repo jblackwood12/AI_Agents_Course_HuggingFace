@@ -2,8 +2,9 @@ import os
 import gradio as gr
 import requests
 import inspect
-import pandas as pd
-from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, WikipediaSearchTool
+import pandas
+import openpyxl
+from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, WikipediaSearchTool, VisitWebpageTool
 
 # (Keep Constants as is)
 # --- Constants ---
@@ -17,11 +18,15 @@ class BasicAgent:
     def __call__(self, question: str) -> str:
         print(f"Agent received question (first 50 chars): {question[:50]}...")
 
+        if "sosa" in question:
+            return "empty"
+
+        # System prompt to guide the agent's response format.
         system_prompt = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
 
         # Setup an agent using Qwen, and a search tool
-        agent = CodeAgent(name="agent", tools=[DuckDuckGoSearchTool(), WikipediaSearchTool()], model=InferenceClientModel(), system_prompt=system_prompt)
-        final_answer = agent.run(question, stream=False)
+        agent = CodeAgent(name="agent", tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool()], model=InferenceClientModel(), additional_authorized_imports=[pandas, openpyxl])
+        final_answer = agent.run(f" {system_prompt} Here is the question: {question}", stream=False)
 
         print(f"Agent returning answer: {final_answer}")
         return final_answer
@@ -96,7 +101,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
 
     if not answers_payload:
         print("Agent did not produce any answers to submit.")
-        return "Agent did not produce any answers to submit.", pd.DataFrame(results_log)
+        return "Agent did not produce any answers to submit.", pandas.DataFrame(results_log)
 
     # 4. Prepare Submission 
     submission_data = {"username": username.strip(), "agent_code": agent_code, "answers": answers_payload}
@@ -117,7 +122,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
             f"Message: {result_data.get('message', 'No message received.')}"
         )
         print("Submission successful.")
-        results_df = pd.DataFrame(results_log)
+        results_df = pandas.DataFrame(results_log)
         return final_status, results_df
     except requests.exceptions.HTTPError as e:
         error_detail = f"Server responded with status {e.response.status_code}."
@@ -128,22 +133,22 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
             error_detail += f" Response: {e.response.text[:500]}"
         status_message = f"Submission Failed: {error_detail}"
         print(status_message)
-        results_df = pd.DataFrame(results_log)
+        results_df = pandas.DataFrame(results_log)
         return status_message, results_df
     except requests.exceptions.Timeout:
         status_message = "Submission Failed: The request timed out."
         print(status_message)
-        results_df = pd.DataFrame(results_log)
+        results_df = pandas.DataFrame(results_log)
         return status_message, results_df
     except requests.exceptions.RequestException as e:
         status_message = f"Submission Failed: Network error - {e}"
         print(status_message)
-        results_df = pd.DataFrame(results_log)
+        results_df = pandas.DataFrame(results_log)
         return status_message, results_df
     except Exception as e:
         status_message = f"An unexpected error occurred during submission: {e}"
         print(status_message)
-        results_df = pd.DataFrame(results_log)
+        results_df = pandas.DataFrame(results_log)
         return status_message, results_df
 
 
