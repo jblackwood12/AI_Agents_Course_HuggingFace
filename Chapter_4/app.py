@@ -22,14 +22,17 @@ class BasicAgent:
             return "empty"
 
         # System prompt to guide the agent's response format.
-        system_prompt = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
+        system_prompt = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. Exclude square brackets like: '[' and ']'. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
 
         # Setup an agent using Qwen, and a search tool
         agent = CodeAgent(name="agent",
                           tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), SpeechToTextTool()],
                           model=InferenceClientModel(model_id="openai/gpt-oss-120b"),
-                          additional_authorized_imports=[pandas, openpyxl])
+                          additional_authorized_imports=[])
         final_answer = agent.run(f" {system_prompt} Here is the question: {question}", stream=False)
+
+        if len(final_answer) > 200:
+            return "Too long"
 
         print(f"Agent returning answer: {final_answer}")
         return final_answer
