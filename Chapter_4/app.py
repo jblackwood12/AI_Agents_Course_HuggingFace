@@ -25,7 +25,7 @@ class BasicAgent:
             return "empty"
 
         # System prompt to guide the agent's response format.
-        system_prompt = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. Exclude square brackets like: '[' and ']'. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
+        system_prompt = "<general_instructions>You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. Exclude square brackets like: '[' and ']'. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string. </general_instructions>"
 
         # pdf_extraction_tool = Tool.from_space(
         #     "matterattetatte/pdf-extractor-tool",
@@ -36,9 +36,9 @@ class BasicAgent:
         # Setup an agent using Qwen, and a search tool
         agent = CodeAgent(name="agent",
                           tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), SpeechToTextToolCustom(), GetFileTool()],
-                          model=InferenceClientModel(model_id="openai/gpt-oss-120b", max_tokens=10000),
+                          model=InferenceClientModel(model_id="deepseek-ai/DeepSeek-V3", max_tokens=10000),
                           additional_authorized_imports=['pandas', 'openpyxl', 'os', 're', 'io'])
-        final_answer = agent.run(f" {system_prompt} Here is the question: {question}", stream=False)
+        final_answer = agent.run(f" {system_prompt}\n{question}", stream=False)
 
         if len(final_answer) > 200:
             return "Too long"
@@ -137,7 +137,9 @@ class SpeechToTextToolCustom(Tool):
         )
 
         pipe_results = pipe(audio)
-        return pipe_results["text"]
+        formatted_text = f"<transcribed_text>{pipe_results['text']}</transcribed_text> Refer to the question_text section to ensure the correct data is retrieved from this transcribed_text. Ensure that you read context carefully."
+
+        return formatted_text
 
 
 def run_and_submit_all( profile: gr.OAuthProfile | None):
