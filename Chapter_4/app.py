@@ -43,6 +43,33 @@ class BasicAgent:
         print(f"Agent returning answer: {final_answer}")
         return final_answer
 
+
+def get_file_for_task(task_id: str) -> None:
+    file_url = f"{DEFAULT_API_URL}/files/{task_id}"
+
+    print(f"Fetching file from task_id: {task_id}")
+    try:
+        response = requests.get(file_url, timeout=15)
+        response.raise_for_status()
+        file_data = response.json()
+        if not file_data:
+             print("Fetched file is empty.")
+             return "Fetched file is empty or invalid format.", None
+        print(f"Fetched {len(file_data)} files.")
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching questions: {e}")
+        return f"Error fetching questions: {e}", None
+    except requests.exceptions.JSONDecodeError as e:
+         print(f"Error decoding JSON response from files endpoint: {e}")
+         print(f"Response text: {response.text[:500]}")
+         return f"Error decoding server response for files: {e}", None
+    except Exception as e:
+        print(f"An unexpected error occurred fetching files: {e}")
+        return f"An unexpected error occurred fetching files: {e}", None
+    
+    return file_data    
+
+
 def run_and_submit_all( profile: gr.OAuthProfile | None):
     """
     Fetches all questions, runs the BasicAgent on them, submits all answers,
@@ -92,6 +119,14 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
     except Exception as e:
         print(f"An unexpected error occurred fetching questions: {e}")
         return f"An unexpected error occurred fetching questions: {e}", None
+
+    # keep "99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3" for .mp3 file retrieval testing
+    # TODO: Try other questions with file retrieval.
+    new_questions_data = []
+    for entry in questions_data:
+        if entry['task_id'] == '99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3':
+            new_questions_data.append(entry)
+    questions_data = new_questions_data
 
     # 3. Run your Agent
     results_log = []
