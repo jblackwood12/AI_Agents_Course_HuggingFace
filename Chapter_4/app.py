@@ -4,7 +4,10 @@ import requests
 import inspect
 import pandas
 import openpyxl
-from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, WikipediaSearchTool, VisitWebpageTool, SpeechToTextTool, Tool
+from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, WikipediaSearchTool, VisitWebpageTool, Tool
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+
 
 # (Keep Constants as is)
 # --- Constants ---
@@ -32,7 +35,7 @@ class BasicAgent:
 
         # Setup an agent using Qwen, and a search tool
         agent = CodeAgent(name="agent",
-                          tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), SpeechToTextTool(), GetFileTool()],
+                          tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), SpeechToTextToolCustom(), GetFileTool()],
                           model=InferenceClientModel(model_id="openai/gpt-oss-120b", max_tokens=10000),
                           additional_authorized_imports=['pandas', 'openpyxl', 'os', 're', 'io'])
         final_answer = agent.run(f" {system_prompt} Here is the question: {question}", stream=False)
@@ -96,6 +99,45 @@ class GetFileTool(Tool):
             f.write(response.content)   
         return file_path  
 
+class SpeechToTextToolCustom(Tool):
+    default_checkpoint = "openai/whisper-large-v3-turbo"
+    description = "This is a tool that transcribes an audio into text. It returns the transcribed text."
+    name = "transcriber"
+    inputs = {
+        "audio": {
+            "type": "audio",
+            "description": "The audio to transcribe. Can be a local path, an url, or a tensor.",
+        }
+    }
+    output_type = "string"
+
+    def __new__(cls, *args, **kwargs):
+        return super().__new__(cls)
+
+    def forward(self, audio):
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"        
+        torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        model_id = "openai/whisper-large-v3-turbo"
+
+        model = AutoModelForSpeechSeq2Seq.from_pretrained(
+            model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
+        )
+        model.to(device)
+
+        processor = AutoProcessor.from_pretrained(model_id)
+
+        pipe = pipeline(
+            "automatic-speech-recognition",
+            model=model,
+            tokenizer=processor.tokenizer,
+            feature_extractor=processor.feature_extractor,
+            torch_dtype=torch_dtype,
+            device=device,
+        )
+
+        pipe_results = pipe(audio)
+        return pipe_results["text"]
+
 
 def run_and_submit_all( profile: gr.OAuthProfile | None):
     """
@@ -151,7 +193,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
     # TODO: Try other questions with file retrieval. "1f975693-876d-457b-a649-393859e79bf3" for audio on calculus homework
     new_questions_data = []
     for entry in questions_data:
-        if entry['task_id'] == '1f975693-876d-457b-a649-393859e79bf3':
+        if entry['task_id'] == '99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3':
             new_questions_data.append(entry)
     questions_data = new_questions_data
 
