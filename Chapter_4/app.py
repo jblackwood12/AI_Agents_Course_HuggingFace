@@ -100,6 +100,7 @@ class GetFileTool(Tool):
         return file_path  
 
 class SpeechToTextToolCustom(Tool):
+    """ Implemented from here: https://huggingface.co/openai/whisper-large-v3-turbo """
     default_checkpoint = "openai/whisper-large-v3-turbo"
     description = "This is a tool that transcribes an audio into text. It returns the transcribed text."
     name = "transcriber"
@@ -194,11 +195,11 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
 
     # keep "99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3" for audio on strawberry pie recipe
     # TODO: Try other questions with file retrieval. "1f975693-876d-457b-a649-393859e79bf3" for audio on calculus homework
-    new_questions_data = []
-    for entry in questions_data:
-        if entry['task_id'] == '1f975693-876d-457b-a649-393859e79bf3':
-            new_questions_data.append(entry)
-    questions_data = new_questions_data
+    # new_questions_data = []
+    # for entry in questions_data:
+    #     if entry['task_id'] == '99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3':
+    #         new_questions_data.append(entry)
+    # questions_data = new_questions_data
 
     # 3. Run your Agent
     results_log = []
