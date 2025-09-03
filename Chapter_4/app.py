@@ -24,17 +24,17 @@ class BasicAgent:
         # System prompt to guide the agent's response format.
         system_prompt = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. Exclude square brackets like: '[' and ']'. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
 
-        pdf_extraction_tool = Tool.from_space(
-            "matterattetatte/pdf-extractor-tool",
-            name="pdf-extractor",
-            description="Extract data"
-        )
+        # pdf_extraction_tool = Tool.from_space(
+        #     "matterattetatte/pdf-extractor-tool",
+        #     name="pdf-extractor",
+        #     description="Extract data"
+        # )
 
         # Setup an agent using Qwen, and a search tool
         agent = CodeAgent(name="agent",
-                          tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), SpeechToTextTool(), pdf_extraction_tool],
+                          tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), SpeechToTextTool(), GetFileTool()],
                           model=InferenceClientModel(model_id="openai/gpt-oss-120b", max_tokens=10000),
-                          additional_authorized_imports=['pandas', 'openpyxl', 'os', 're'])
+                          additional_authorized_imports=['pandas', 'openpyxl', 'os', 're', 'io'])
         final_answer = agent.run(f" {system_prompt} Here is the question: {question}", stream=False)
 
         if len(final_answer) > 200:
@@ -43,31 +43,48 @@ class BasicAgent:
         print(f"Agent returning answer: {final_answer}")
         return final_answer
 
+class GetFileTool(Tool):
+    name = "gets_file"
+    description = (
+        "Gets the file related to the question id."
+    )
+    inputs = {
+        "question_id": {
+            "type": "string",
+            "description": "The question id to get the file from.",
+        }
+    }
+    output_type = "string"
 
-def get_file_for_task(task_id: str) -> None:
-    file_url = f"{DEFAULT_API_URL}/files/{task_id}"
+    def __init__(self):
+        super().__init__()
 
-    print(f"Fetching file from task_id: {task_id}")
-    try:
-        response = requests.get(file_url, timeout=15)
-        response.raise_for_status()
-        file_data = response.json()
-        if not file_data:
-             print("Fetched file is empty.")
-             return "Fetched file is empty or invalid format.", None
-        print(f"Fetched {len(file_data)} files.")
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching questions: {e}")
-        return f"Error fetching questions: {e}", None
-    except requests.exceptions.JSONDecodeError as e:
-         print(f"Error decoding JSON response from files endpoint: {e}")
-         print(f"Response text: {response.text[:500]}")
-         return f"Error decoding server response for files: {e}", None
-    except Exception as e:
-        print(f"An unexpected error occurred fetching files: {e}")
-        return f"An unexpected error occurred fetching files: {e}", None
-    
-    return file_data    
+    def forward(self, question_id):
+        return self.get_file_for_task(question_id)
+
+    def get_file_for_task(self, question_id: str):
+        file_url = f"{DEFAULT_API_URL}/files/{question_id}"
+
+        print(f"Fetching file from task_id: {question_id}")
+        try:
+            response = requests.get(file_url, timeout=15)
+            response.raise_for_status()
+            if not response.content:
+                print("Fetched file is empty.")
+                return "Fetched file is empty or invalid format.", None
+            print(f"Fetched {len(response.content)} files.")
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching questions: {e}")
+            return f"Error fetching questions: {e}", None
+        except requests.exceptions.JSONDecodeError as e:
+            print(f"Error decoding JSON response from files endpoint: {e}")
+            print(f"Response text: {response.text[:500]}")
+            return f"Error decoding server response for files: {e}", None
+        except Exception as e:
+            print(f"An unexpected error occurred fetching files: {e}")
+            return f"An unexpected error occurred fetching files: {e}", None
+        
+        return response.content    
 
 
 def run_and_submit_all( profile: gr.OAuthProfile | None):
@@ -120,11 +137,11 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
         print(f"An unexpected error occurred fetching questions: {e}")
         return f"An unexpected error occurred fetching questions: {e}", None
 
-    # keep "99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3" for .mp3 file retrieval testing
-    # TODO: Try other questions with file retrieval.
+    # keep "99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3" for audio on strawberry pie recipe
+    # TODO: Try other questions with file retrieval. "1f975693-876d-457b-a649-393859e79bf3" for audio on calculus homework
     new_questions_data = []
     for entry in questions_data:
-        if entry['task_id'] == '99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3':
+        if entry['task_id'] == '1f975693-876d-457b-a649-393859e79bf3':
             new_questions_data.append(entry)
     questions_data = new_questions_data
 
@@ -139,7 +156,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
             print(f"Skipping item with missing task_id or question: {item}")
             continue
         try:
-            submitted_answer = agent(question_text)
+            submitted_answer = agent(f"<question_id>{task_id}</question_id>   <question_text>{question_text}</question_text>")
             answers_payload.append({"task_id": task_id, "submitted_answer": submitted_answer})
             results_log.append({"Task ID": task_id, "Question": question_text, "Submitted Answer": submitted_answer})
         except Exception as e:
