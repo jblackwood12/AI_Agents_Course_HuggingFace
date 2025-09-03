@@ -133,6 +133,7 @@ class SpeechToTextToolCustom(Tool):
             feature_extractor=processor.feature_extractor,
             torch_dtype=torch_dtype,
             device=device,
+            return_timestamps=True
         )
 
         pipe_results = pipe(audio)
@@ -193,7 +194,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
     # TODO: Try other questions with file retrieval. "1f975693-876d-457b-a649-393859e79bf3" for audio on calculus homework
     new_questions_data = []
     for entry in questions_data:
-        if entry['task_id'] == '99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3':
+        if entry['task_id'] == '1f975693-876d-457b-a649-393859e79bf3':
             new_questions_data.append(entry)
     questions_data = new_questions_data
 
