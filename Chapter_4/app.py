@@ -46,7 +46,7 @@ class BasicAgent:
 class GetFileTool(Tool):
     name = "gets_file"
     description = (
-        "Gets the file related to the question id."
+        "Downloads a file, and returns a path to that file, related to the question id."
     )
     inputs = {
         "question_id": {
@@ -84,7 +84,17 @@ class GetFileTool(Tool):
             print(f"An unexpected error occurred fetching files: {e}")
             return f"An unexpected error occurred fetching files: {e}", None
         
-        return response.content    
+        headers_val = response.headers.get('content-disposition')
+
+        split_str = headers_val.split(question_id)
+        file_extension = split_str[1].replace('"', '')
+        file_name = f"{question_id}{file_extension}"
+        file_path = f"/tmp/{file_name}"
+
+        # return the path of the file that was downloaded                                                                                                                                          
+        with open(file_path, "wb") as f:                                                                                                                                              
+            f.write(response.content)   
+        return file_path  
 
 
 def run_and_submit_all( profile: gr.OAuthProfile | None):
