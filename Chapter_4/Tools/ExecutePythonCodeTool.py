@@ -15,9 +15,13 @@ class ExecutePythonCodeTool(Tool):
     def forward(self, python_code_file_path: str) -> str:
         result = subprocess.run(
             ["python", python_code_file_path],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             check=True
         )
 
-        return result.stdout
+        output_before_trim = result.stdout
+        trimmed_output = output_before_trim.replace('0\n', '') # strip out the added "returncode 0" from stdout
+
+        return trimmed_output
