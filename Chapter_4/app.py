@@ -6,7 +6,7 @@ import pandas
 import openpyxl
 from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, WikipediaSearchTool, VisitWebpageTool, Tool
 import Tools.GetFileTool as GetFileTool
-import Tools.SpeechToTextToolCustom as SpeechToTextToolCustom
+import Tools.CustomSpeechToTextTool as CustomSpeechToTextTool
 
 
 # (Keep Constants as is)
@@ -35,7 +35,7 @@ class BasicAgent:
 
         # Setup an agent using Qwen, and a search tool
         agent = CodeAgent(name="agent",
-                          tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), SpeechToTextToolCustom(), GetFileTool()],
+                          tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), CustomSpeechToTextTool(), GetFileTool()],
                           model=InferenceClientModel(model_id="deepseek-ai/DeepSeek-V3", max_tokens=10000),
                           additional_authorized_imports=['pandas', 'openpyxl', 'os', 're', 'io'])
         final_answer = agent.run(f" {system_prompt}\n{question}", stream=False)
@@ -97,13 +97,14 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
         print(f"An unexpected error occurred fetching questions: {e}")
         return f"An unexpected error occurred fetching questions: {e}", None
 
+    # "cca530fc-4052-43b2-b130-b30968d8aa44" is for analyzing a picture of a chess board.
     # "f918266a-b3e0-4914-865d-4faa564f1aef" is for downloading python code and the running it in memory to get the result.
     # "cca530fc-4052-43b2-b130-b30968d8aa44" is for downloading an image (chess board) then getting a description of the image.
     # keep "99c9cc74-fdc8-46c6-8f8d-3ce2d3bfeea3" for audio on strawberry pie recipe
     # TODO: Try other questions with file retrieval. "1f975693-876d-457b-a649-393859e79bf3" for audio on calculus homework
     new_questions_data = []
     for entry in questions_data:
-        if entry['task_id'] == 'f918266a-b3e0-4914-865d-4faa564f1aef':
+        if entry['task_id'] == 'cca530fc-4052-43b2-b130-b30968d8aa44':
             new_questions_data.append(entry)
     questions_data = new_questions_data
 

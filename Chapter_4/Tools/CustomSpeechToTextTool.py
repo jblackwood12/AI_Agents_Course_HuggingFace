@@ -2,7 +2,7 @@ from smolagents import Tool
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
-class SpeechToTextToolCustom(Tool):
+class CustomSpeechToTextTool(Tool):
     """ Implemented from here: https://huggingface.co/openai/whisper-large-v3-turbo """
     default_checkpoint = "openai/whisper-large-v3-turbo"
     description = "This is a tool that transcribes an audio into text. It returns the transcribed text."
