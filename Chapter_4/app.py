@@ -5,9 +5,7 @@ from typing import Any
 import pandas
 import openpyxl
 from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, WikipediaSearchTool, VisitWebpageTool, Tool
-import Tools.GetFileTool as GetFileTool
-import Tools.CustomSpeechToTextTool as CustomSpeechToTextTool
-
+from Tools import CustomSpeechToTextTool, ExecutePythonCodeTool, GetFileTool, ImageDescriptionTool
 
 # (Keep Constants as is)
 # --- Constants ---
@@ -35,7 +33,15 @@ class BasicAgent:
 
         # Setup an agent using Qwen, and a search tool
         agent = CodeAgent(name="agent",
-                          tools=[DuckDuckGoSearchTool(), WikipediaSearchTool(), VisitWebpageTool(), CustomSpeechToTextTool(), GetFileTool()],
+                          tools=[
+                              DuckDuckGoSearchTool(),
+                              WikipediaSearchTool(),
+                              VisitWebpageTool(),
+                              CustomSpeechToTextTool.CustomSpeechToTextTool(),
+                              GetFileTool.GetFileTool(),
+                              ExecutePythonCodeTool.ExecutePythonCodeTool(),
+                              ImageDescriptionTool.ImageDescriptionTool()
+                              ],
                           model=InferenceClientModel(model_id="deepseek-ai/DeepSeek-V3", max_tokens=10000),
                           additional_authorized_imports=['pandas', 'openpyxl', 'os', 're', 'io'])
         final_answer = agent.run(f" {system_prompt}\n{question}", stream=False)
@@ -97,6 +103,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
         print(f"An unexpected error occurred fetching questions: {e}")
         return f"An unexpected error occurred fetching questions: {e}", None
 
+    # "f918266a-b3e0-4914-865d-4faa564f1aef" is for executing a Python code file and returning the output.
     # "cca530fc-4052-43b2-b130-b30968d8aa44" is for analyzing a picture of a chess board.
     # "f918266a-b3e0-4914-865d-4faa564f1aef" is for downloading python code and the running it in memory to get the result.
     # "cca530fc-4052-43b2-b130-b30968d8aa44" is for downloading an image (chess board) then getting a description of the image.
@@ -104,7 +111,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
     # TODO: Try other questions with file retrieval. "1f975693-876d-457b-a649-393859e79bf3" for audio on calculus homework
     new_questions_data = []
     for entry in questions_data:
-        if entry['task_id'] == 'cca530fc-4052-43b2-b130-b30968d8aa44':
+        if entry['task_id'] == 'f918266a-b3e0-4914-865d-4faa564f1aef':
             new_questions_data.append(entry)
     questions_data = new_questions_data
 

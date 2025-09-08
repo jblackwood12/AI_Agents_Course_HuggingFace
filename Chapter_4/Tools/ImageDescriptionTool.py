@@ -8,6 +8,9 @@ class ImageDescriptionTool(Tool):
     inputs = {"image": {"type": "image", "description": "The image to describe"}}
     output_type = "string"
 
+    def __new__(cls, *args, **kwargs):
+        return super().__new__(cls)
+
     def forward(self, image: Any) -> str:
         # Implement image description logic here using a vision-language model
         # For example:
