@@ -5,7 +5,9 @@ from PIL import Image
 
 # Would be used to get information about the chess position in an image.
 # Not descriptive enough for getting Chess Positions
-# May need to use: https://github.com/gudbrandtandberg/ChessVision
+# Might be possible to use API from: https://helpman.komtera.lt/chessocr/
+# What gets outputted is the "FEN" string that represents the position
+# This would then require using a chess engine to analyze the position, and return the best move.
 class ImageDescriptionTool(Tool):
     name = "image_describer"
     description = "Generates a textual description of an image."
